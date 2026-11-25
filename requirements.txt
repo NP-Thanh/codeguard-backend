@@ -8,5 +8,6 @@ pwdlib[argon2]
 pyjwt
 python-multipart
 email-validator
+redis
 pytest
 httpx

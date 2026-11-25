@@ -2,9 +2,13 @@ from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.security import hash_password, verify_password
+from app.core.security import (
+    hash_password,
+    validate_password_strength,
+    verify_password,
+)
 from app.models.user import User
-from app.schemas.user import UserRegister
+from app.schemas.user import ChangePasswordRequest, UserRegister
 
 
 def register_user(db: Session, user_data: UserRegister) -> User:
@@ -41,6 +45,7 @@ def register_user(db: Session, user_data: UserRegister) -> User:
 
     return user
 
+
 def authenticate_user(
     db: Session,
     identifier: str,
@@ -65,3 +70,34 @@ def authenticate_user(
         return None
 
     return user
+
+
+def change_user_password(
+    db: Session,
+    user: User,
+    data: ChangePasswordRequest
+) -> None:
+    """
+    Đổi mật khẩu cho user.
+    Raise ValueError với thông báo lỗi cụ thể nếu không hợp lệ.
+    """
+    # 1. Xác thực mật khẩu hiện tại
+    if not verify_password(data.current_password, user.password_hash):
+        raise ValueError("Current password is incorrect")
+
+    # 2. Mật khẩu mới không được giống mật khẩu cũ
+    if verify_password(data.new_password, user.password_hash):
+        raise ValueError("New password must be different from the current password")
+
+    # 3. Kiểm tra confirm trùng khớp
+    if data.new_password != data.confirm_password:
+        raise ValueError("New password and confirmation do not match")
+
+    # 4. Kiểm tra độ mạnh mật khẩu mới
+    errors = validate_password_strength(data.new_password)
+    if errors:
+        raise ValueError(errors[0])
+
+    # 5. Update DB
+    user.password_hash = hash_password(data.new_password)
+    db.commit()

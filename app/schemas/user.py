@@ -18,6 +18,7 @@ class UserResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class UserLogin(BaseModel):
     identifier: str = Field(min_length=1)
     password: str = Field(min_length=1)
@@ -26,3 +27,13 @@ class UserLogin(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1)
+    new_password: str = Field(min_length=8, max_length=128)
+    confirm_password: str = Field(min_length=1)
+
+
+class MessageResponse(BaseModel):
+    message: str
